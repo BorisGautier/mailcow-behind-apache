@@ -1,0 +1,4 @@
+shellcheck:
+  image: koalaman/shellcheck-alpine:v0.10.0
+  script:
+    - shellcheck -x -P scripts scripts/*.sh templates/*.sh

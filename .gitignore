@@ -1,0 +1,4 @@
+# Local configuration: contains the DNS provider token
+config.env
+*.secret
+*.bak

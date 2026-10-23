@@ -1,0 +1,4 @@
+# Resolve "lib.sh" sourced with $(dirname "$0")
+source-path=SCRIPTDIR
+# `cond && ok "..." || warn "..."`: ok/warn/fail/bad always return 0, so the || branch never runs after a success
+disable=SC2015

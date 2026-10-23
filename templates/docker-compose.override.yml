@@ -1,0 +1,77 @@
+# mailcow-behind-apache: memory/CPU limits for mailcow on a server shared with other applications.
+# docker compose reads this file automatically in the mailcow directory; mailcow's update.sh keeps it.
+# Measured on a small production server (5 domains, ~30 mailboxes). Typical use in parentheses.
+# Raise a limit if `scripts/check.sh` reports a container killed for lack of memory.
+services:
+  clamd-mailcow:            # (~1 GB, up to ~2 GB while reloading signatures)
+    mem_limit: 2560m
+    memswap_limit: 2560m
+    cpus: 1
+  mysql-mailcow:            # (~350 MB)
+    mem_limit: 1024m
+    memswap_limit: 1024m
+    cpus: 1
+  rspamd-mailcow:           # (~300 MB)
+    mem_limit: 768m
+    memswap_limit: 768m
+    cpus: 0.5
+  sogo-mailcow:             # (~300 MB, grows with webmail users)
+    mem_limit: 768m
+    memswap_limit: 768m
+    cpus: 0.5
+  dovecot-mailcow:          # (~80 MB)
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.5
+  ofelia-mailcow:           # (~270 MB)
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.5
+  redis-mailcow:
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1
+  memcached-mailcow:
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1
+  php-fpm-mailcow:          # (~150 MB)
+    mem_limit: 384m
+    memswap_limit: 384m
+    cpus: 0.5
+  postfix-mailcow:
+    mem_limit: 320m
+    memswap_limit: 320m
+    cpus: 0.5
+  dockerapi-mailcow:
+    mem_limit: 320m
+    memswap_limit: 320m
+    cpus: 0.5
+  postfix-tlspol-mailcow:
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
+  acme-mailcow:
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
+  netfilter-mailcow:
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
+  nginx-mailcow:
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
+  olefy-mailcow:
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
+  unbound-mailcow:
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
+  watchdog-mailcow:
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
