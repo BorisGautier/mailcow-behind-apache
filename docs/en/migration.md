@@ -42,7 +42,7 @@ docker run --rm gilleslamiral/imapsync imapsync \
 ## 5. Switch
 
 ```bash
-sudo ./scripts/04-dns-gandi.sh client-a.org      # or publish the records printed by 03 by hand
+sudo ./scripts/04-dns-publish.sh client-a.org      # or publish the records printed by 03 by hand
 ```
 
 Then run the sync jobs once more (second pass): it copies only what arrived at the old provider during

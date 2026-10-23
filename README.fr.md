@@ -1,5 +1,9 @@
 # mailcow-behind-apache
 
+[![CI](https://github.com/BorisGautier/mailcow-behind-apache/actions/workflows/ci.yml/badge.svg)](https://github.com/BorisGautier/mailcow-behind-apache/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/BorisGautier/mailcow-behind-apache)](https://github.com/BorisGautier/mailcow-behind-apache/releases)
+[![Licence : MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+
 **Héberger soi-même ses e-mails (et ceux de ses clients) avec [mailcow](https://mailcow.email) sur un VPS qui fait déjà tourner d'autres sites derrière Apache.**
 
 [English version](README.md)
@@ -25,8 +29,11 @@ Apache sert déjà vos sites et certbot gère déjà les certificats. Ces script
   présentent jamais un certificat expiré pendant que le site, lui, paraît normal.
 - **Plusieurs domaines, un serveur.** `mail.exemple.com` héberge les boîtes de `client-a.org`, `client-b.net`…
   Chaque client peut garder `webmail.client-a.org`, redirigé vers le webmail commun.
-- **Un DNS propre.** MX, un seul SPF fusionné, DKIM (2048 bits), DMARC et SRV sont générés, et peuvent être publiés
-  automatiquement chez Gandi LiveDNS (zone sauvegardée avant).
+- **Un DNS propre, quel que soit l'hébergeur.** MX, un seul SPF fusionné, DKIM (2048 bits), DMARC et SRV sont générés
+  et publiés par l'API de Gandi ou Cloudflare, de plus de 100 autres hébergeurs via
+  [dns-lexicon](https://github.com/dns-lexicon/dns-lexicon) (OVH, Route 53, GoDaddy, Namecheap, Infomaniak…), ou écrits
+  dans un extrait de zone à coller n'importe où. La zone est sauvegardée avant. Voir
+  [Hébergeurs DNS](docs/fr/hebergeurs-dns.md).
 - **Sans danger pour un serveur chargé.** Vérifications préalables (ports, sous-réseaux Docker, port 25 sortant,
   DNS inverse) et limites mémoire pour chaque conteneur mailcow.
 
@@ -57,7 +64,7 @@ sudo ./scripts/02-apache-proxy.sh       # vhost Apache, certificat Let's Encrypt
 # se connecter à https://mail.exemple.com/admin (admin / moohoo) : changer le mot de passe, activer la 2FA
 
 sudo ./scripts/03-add-domain.sh client-a.org          # domaine + DKIM, affiche les enregistrements DNS
-sudo ./scripts/04-dns-gandi.sh client-a.org           # facultatif : les publier chez Gandi LiveDNS
+sudo ./scripts/04-dns-publish.sh client-a.org         # les publier (API ou extrait de zone, voir DNS_PROVIDER)
 sudo ./scripts/05-add-mailbox.sh contact@client-a.org "Contact"
 sudo ./scripts/06-webmail-redirects.sh client-a.org   # facultatif : webmail.client-a.org -> webmail commun
 sudo ./scripts/check.sh                               # vérification complète (à mettre aussi en cron)
@@ -73,7 +80,7 @@ Tous les scripts peuvent être relancés : ils réappliquent leurs réglages san
 | `01-install-mailcow.sh` | Clone mailcow, génère `mailcow.conf`, l'attache à l'interface locale, coupe son client ACME, règle le sous-réseau Docker, l'IPv6, ClamAV, l'API (hôte uniquement) et les limites, télécharge et démarre. |
 | `02-apache-proxy.sh` | Active les modules Apache, obtient le certificat (ajoute autodiscover/autoconfig seulement s'ils pointent ici), écrit le vhost, installe le hook certbot et l'exécute une fois. |
 | `03-add-domain.sh` | Crée le domaine et sa clé DKIM via l'API mailcow et affiche tous les enregistrements DNS. |
-| `04-dns-gandi.sh` | Sauvegarde la zone puis publie MX, SPF fusionné, DKIM (découpé en chaînes de 255 caractères), DMARC, SRV et le CNAME `webmail`. Demande confirmation avant de remplacer un MX existant. Vérifie sur les serveurs faisant autorité. |
+| `04-dns-publish.sh` | Sauvegarde les enregistrements puis publie MX, SPF fusionné (les autres TXT sont conservés), DKIM, DMARC, SRV et le CNAME `webmail` via le fournisseur choisi (`gandi`, `cloudflare`, `lexicon`, ou `manual` = extrait de zone pour tout hébergeur). Demande confirmation avant de remplacer un MX existant. Vérifie sur les serveurs faisant autorité. `--provider` si les domaines sont chez plusieurs hébergeurs. |
 | `05-add-mailbox.sh` | Crée une boîte avec un mot de passe aléatoire, enregistré dans un fichier lisible par root seulement. |
 | `06-webmail-redirects.sh` | `webmail.<client>` → webmail commun, avec son propre certificat. |
 | `check.sh` | Conteneurs, arrêts pour manque de mémoire, ports, file d'attente, expiration des certificats sur 465/587/993, PTR, listes noires, et pour chaque domaine MX/SPF/DKIM (comparé à la clé de mailcow)/DMARC. `--send-test` envoie un vrai message. |
@@ -81,12 +88,24 @@ Tous les scripts peuvent être relancés : ils réappliquent leurs réglages san
 ## Documentation
 
 - [Les pièges rencontrés et leurs solutions](docs/fr/pieges.md)
+- [Hébergeurs DNS](docs/fr/hebergeurs-dns.md) : Gandi, Cloudflare, plus de 100 hébergeurs via dns-lexicon, ou manuel
 - [Migrer un domaine depuis un autre hébergeur](docs/fr/migration.md) (sans perdre de mails)
 - [Exploitation](docs/fr/exploitation.md) : sauvegardes, mises à jour, supervision, envoi depuis vos applications, durcissement DMARC
 
+## Développement
+
+- On travaille sur `dev` ; `main` ne reçoit que des changements testés, par pull request depuis `dev`.
+- La CI tourne à chaque push et pull request : ShellCheck, syntaxe bash, YAML, liens de la documentation, tests
+  unitaires (`bats tests`), vhost généré vérifié par un vrai Apache, et compatibilité avec la version actuelle de
+  mailcow (aussi chaque lundi, pour détecter les changements en amont).
+- Dependabot ouvre chaque semaine des pull requests sur `dev` pour les GitHub Actions utilisées par les workflows.
+- Publier une version : l'ajouter dans [CHANGELOG.md](CHANGELOG.md), fusionner dans `main`, puis
+  `git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z`. Le workflow de release relance la CI puis publie la release
+  GitHub avec ses notes et une archive.
+
 ## Sécurité
 
-- `config.env` (jeton Gandi) et le fichier des mots de passe ne sont jamais commités (`.gitignore`). Gardez-les lisibles par root seulement.
+- `config.env` (jetons des API DNS) et le fichier des mots de passe ne sont jamais commités (`.gitignore`). Gardez-les lisibles par root seulement.
 - La clé d'API mailcow générée à l'installation n'accepte que les requêtes venant du serveur lui-même.
 - Changez le mot de passe administrateur par défaut et activez la double authentification dès l'installation.
 

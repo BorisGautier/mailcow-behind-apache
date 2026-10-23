@@ -35,6 +35,15 @@ load_config() {
   SPF_EXTRA="${SPF_EXTRA:-}"
   CREDENTIALS_FILE="${CREDENTIALS_FILE:-/root/mailcow-mailboxes.txt}"
   GANDI_PAT="${GANDI_PAT:-}"
+  CLOUDFLARE_API_TOKEN="${CLOUDFLARE_API_TOKEN:-}"
+  LEXICON_PROVIDER="${LEXICON_PROVIDER:-}"
+  # older config files only had GANDI_PAT
+  if [ -z "${DNS_PROVIDER:-}" ]; then
+    if [ -n "$GANDI_PAT" ]; then DNS_PROVIDER=gandi; else DNS_PROVIDER=manual; fi
+  fi
+  # dns-lexicon reads its credentials from the environment
+  local lx
+  for lx in $(compgen -v LEXICON_); do export "${lx?}"; done
 }
 
 # Set KEY=VALUE in mailcow.conf (replace or append)
@@ -67,3 +76,27 @@ gen_password() { openssl rand -base64 32 | tr -d '/+=' | cut -c1-"${1:-20}"; }
 
 # dig wrapper with a public resolver, so results are not polluted by local caches
 qdig() { dig +short @1.1.1.1 "$@"; }
+
+# --- Builders (no side effects, covered by tests/lib.bats) ---
+
+# SPF value: this server (mx + a:MAIL_HOSTNAME) plus the extra mechanisms of SPF_EXTRA
+spf_value() { echo "v=spf1 mx a:$MAIL_HOSTNAME${SPF_EXTRA:+ $SPF_EXTRA} ~all"; }
+
+# DMARC value for a domain; "{domain}" in DMARC_RUA is replaced by the domain
+dmarc_value() { echo "v=DMARC1; p=$DMARC_POLICY; rua=mailto:${DMARC_RUA//\{domain\}/$1}"; }
+
+# A TXT string is limited to 255 characters: long values (DKIM keys) become several quoted strings
+# in one record. Prints them as one JSON string, the format of a Gandi rrset value.
+txt_chunks() { printf '%s' "$1" | fold -w 250 | jq -Rn '[inputs | "\"" + . + "\""] | join(" ")'; }
+
+# Apache vhost for mailcow (templates/apache-mailcow.conf)
+render_apache_vhost() {
+  sed -e "s/__MAIL_HOSTNAME__/$MAIL_HOSTNAME/g" -e "s/__DOMAIN_BASE__/${MAIL_HOSTNAME#*.}/g" \
+      -e "s/__HTTPS_PORT__/$MAILCOW_HTTPS_PORT/g" "$REPO_DIR/templates/apache-mailcow.conf"
+}
+
+# certbot deploy hook (templates/certbot-deploy-hook.sh)
+render_deploy_hook() {
+  sed -e "s#__MAIL_HOSTNAME__#$MAIL_HOSTNAME#g" -e "s#__MAILCOW_DIR__#$MAILCOW_DIR#g" \
+      "$REPO_DIR/templates/certbot-deploy-hook.sh"
+}

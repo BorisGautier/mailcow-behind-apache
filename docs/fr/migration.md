@@ -44,7 +44,7 @@ docker run --rm gilleslamiral/imapsync imapsync \
 ## 5. Basculer
 
 ```bash
-sudo ./scripts/04-dns-gandi.sh client-a.org      # ou publier à la main les enregistrements affichés par 03
+sudo ./scripts/04-dns-publish.sh client-a.org      # ou publier à la main les enregistrements affichés par 03
 ```
 
 Puis relancer les synchronisations une dernière fois (second passage) : elles ne copient que ce qui est arrivé chez

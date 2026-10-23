@@ -1,0 +1,43 @@
+# CD: pushing a tag vX.Y.Z runs the whole CI, then publishes a GitHub release with the notes of that
+# version from CHANGELOG.md and a ready-to-use archive.
+#   git tag -a v0.2.0 -m "v0.2.0" && git push origin v0.2.0
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            index($0, "## [" v "]") == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "::error::no section [$version] in CHANGELOG.md"; exit 1; }
+          cat notes.md
+      - name: Archive
+        run: >-
+          git archive --format=tar.gz --prefix="mailcow-behind-apache-${GITHUB_REF_NAME}/"
+          -o "mailcow-behind-apache-${GITHUB_REF_NAME}.tar.gz" "$GITHUB_REF_NAME"
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME" "mailcow-behind-apache-${GITHUB_REF_NAME}.tar.gz"
+          --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag

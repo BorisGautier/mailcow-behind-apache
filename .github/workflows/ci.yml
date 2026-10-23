@@ -1,0 +1,71 @@
+# CI: lint, unit tests, Apache integration test, compatibility with the current mailcow release.
+# Runs on pushes to main/dev, on pull requests, every Monday (mailcow upstream may change), on demand,
+# and before every release (called by release.yml).
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ShellCheck, bash, YAML, links)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck
+        run: shellcheck -x scripts/*.sh scripts/dns/*.sh templates/*.sh tests/*.sh
+      - name: Bash syntax
+        run: for f in scripts/*.sh scripts/dns/*.sh templates/*.sh tests/*.sh; do bash -n "$f"; done
+      - name: Executable bits
+        run: |
+          for f in scripts/*.sh templates/certbot-deploy-hook.sh tests/*.sh; do
+            [ -x "$f" ] || { echo "::error file=$f::not executable (git update-index --chmod=+x $f)"; exit 1; }
+          done
+      - name: YAML
+        run: pipx run yamllint .github .gitlab-ci.yml templates/docker-compose.override.yml
+      - name: Links in the documentation (relative links only)
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --no-progress '**/*.md'
+          fail: true
+
+  unit-tests:
+    name: Unit tests (bats)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bats
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bats
+      - name: Run
+        run: bats --print-output-on-failure tests
+
+  apache:
+    name: Generated vhost accepted by Apache
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Apache
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq apache2
+      - name: apache2ctl configtest
+        run: sudo tests/apache-configtest.sh
+
+  mailcow-upstream:
+    name: Compatible with current mailcow
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare with mailcow-dockerized master
+        run: tests/mailcow-upstream.sh
