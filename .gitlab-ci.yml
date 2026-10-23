@@ -9,7 +9,9 @@ shellcheck:
 
 unit-tests:
   stage: test
-  image: bats/bats:1.11.0
+  image:
+    name: bats/bats:1.11.0
+    entrypoint: [""]   # the image's entrypoint is bats itself: give the job a plain shell
   before_script:
     - apk add --no-cache jq openssl >/dev/null
   script:
