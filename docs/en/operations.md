@@ -55,7 +55,7 @@ dedicated sending service protects the reputation of your IP.
 2. After a few weeks, check that every legitimate sender passes SPF or DKIM (a report viewer such as
    *parsedmarc* or an online DMARC analyzer helps).
 3. Move to `p=quarantine`, then to `p=reject`. Change `DMARC_POLICY` in `config.env` and run
-   `04-dns-gandi.sh` again, or edit the `_dmarc` record by hand.
+   `04-dns-publish.sh` again, or edit the `_dmarc` record by hand.
 
 ## Rotating a DKIM key
 

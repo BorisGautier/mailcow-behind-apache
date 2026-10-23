@@ -1,6 +1,6 @@
 #!/bin/bash
 # Adds a mail domain to mailcow, generates its DKIM key and prints the DNS records to publish.
-# With GANDI_PAT set in config.env, offers to publish them on Gandi LiveDNS (04-dns-gandi.sh).
+# With an API provider in DNS_PROVIDER (gandi, cloudflare, lexicon), offers to publish them (04-dns-publish.sh).
 # Ajoute un domaine a mailcow, genere sa cle DKIM et affiche les enregistrements DNS a publier.
 #
 # Usage: sudo ./scripts/03-add-domain.sh example.org [--max-mailboxes 20] [--quota-mb 10240]
@@ -38,9 +38,8 @@ dkim=$(mailcow_api GET "get/dkim/$domain" | jq -r '.dkim_txt // empty')
 [ -n "$dkim" ] || die "could not read the DKIM key of $domain"
 ok "ready"
 
-spf="v=spf1 mx a:$MAIL_HOSTNAME${SPF_EXTRA:+ $SPF_EXTRA} ~all"
-rua=${DMARC_RUA//\{domain\}/$domain}
-dmarc="v=DMARC1; p=$DMARC_POLICY; rua=mailto:$rua"
+spf=$(spf_value)
+dmarc=$(dmarc_value "$domain")
 
 cat <<EOF
 
@@ -66,10 +65,13 @@ Notes:
     username = full email address.
 EOF
 
-if [ -n "$GANDI_PAT" ]; then
-  echo
-  read -r -p "Publish these records on Gandi LiveDNS now? [y/N] " answer
-  if [[ "$answer" =~ ^[yYoO] ]]; then "$REPO_DIR/scripts/04-dns-gandi.sh" "$domain"; fi
+echo
+if [ "$DNS_PROVIDER" = manual ]; then
+  echo "To get these records merged with the existing ones of $domain (single SPF, other TXT kept) as a"
+  echo "zone snippet, or to publish them through an API: ./scripts/04-dns-publish.sh $domain [--provider NAME]"
+else
+  read -r -p "Publish these records now through $DNS_PROVIDER? [y/N] " answer
+  if [[ "$answer" =~ ^[yYoO] ]]; then "$REPO_DIR/scripts/04-dns-publish.sh" "$domain"; fi
 fi
 echo
 echo "Next: create mailboxes with ./scripts/05-add-mailbox.sh contact@$domain \"Contact\""

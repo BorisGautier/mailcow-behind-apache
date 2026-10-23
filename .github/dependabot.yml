@@ -1,0 +1,20 @@
+# Weekly dependency updates, proposed as pull requests on dev (merged into main with the next release).
+# The only versioned dependencies of this repository are the GitHub Actions used by the workflows;
+# mailcow itself is checked every week by the "Compatible with current mailcow" CI job.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Africa/Douala
+    open-pull-requests-limit: 5
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns: ["*"]

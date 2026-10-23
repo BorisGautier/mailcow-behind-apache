@@ -34,8 +34,7 @@ certbot certonly --apache --non-interactive --agree-tos -m "$CERTBOT_EMAIL" \
   --cert-name "$MAIL_HOSTNAME" --expand "${names[@]}"
 
 info "Virtual host $site"
-sed -e "s/__MAIL_HOSTNAME__/$MAIL_HOSTNAME/g" -e "s/__DOMAIN_BASE__/$domain_base/g" \
-    -e "s/__HTTPS_PORT__/$MAILCOW_HTTPS_PORT/g" "$REPO_DIR/templates/apache-mailcow.conf" > "$site"
+render_apache_vhost > "$site"
 a2ensite -q "$(basename "$site")"
 apache2ctl configtest
 systemctl reload apache2
@@ -43,8 +42,7 @@ ok "enabled"
 
 info "Deploy hook $hook"
 mkdir -p "$(dirname "$hook")"
-sed -e "s#__MAIL_HOSTNAME__#$MAIL_HOSTNAME#g" -e "s#__MAILCOW_DIR__#$MAILCOW_DIR#g" \
-    "$REPO_DIR/templates/certbot-deploy-hook.sh" > "$hook"
+render_deploy_hook > "$hook"
 chmod 755 "$hook"
 # Run it once now to replace mailcow's placeholder certificate
 RENEWED_LINEAGE="/etc/letsencrypt/live/$MAIL_HOSTNAME" "$hook"

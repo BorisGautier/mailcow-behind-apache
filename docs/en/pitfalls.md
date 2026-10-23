@@ -53,18 +53,18 @@ provider's panel (it is not in your DNS zone). `00-preflight.sh` and `check.sh` 
 Routing).
 
 **12. Two SPF records.** A domain that already had `v=spf1 include:old-provider ~all` and gets a second SPF record
-fails SPF entirely (`permerror`). → Keep exactly one TXT starting with `v=spf1`. `04-dns-gandi.sh` replaces the
+fails SPF entirely (`permerror`). → Keep exactly one TXT starting with `v=spf1`. `04-dns-publish.sh` replaces the
 old one and keeps the other TXT values (site verifications…); `SPF_EXTRA` keeps third-party senders.
 
 **13. MX without the final dot.** In a zone or in some DNS APIs, `10 mail.example.com` (no trailing dot) is relative:
 it becomes `mail.example.com.example.org`. → Always write `mail.example.com.`.
 
 **14. DKIM longer than 255 characters.** A 2048-bit key does not fit in one TXT string. → Split it into several
-quoted strings in the same record (`"v=DKIM1; k=rsa; p=MIIB..." "...rest"`). The Gandi script does it.
+quoted strings in the same record (`"v=DKIM1; k=rsa; p=MIIB..." "...rest"`). `04-dns-publish.sh` does it for every provider.
 
 **15. Gandi LiveDNS accepts an update but keeps serving the old TXT.** Observed several times: the API answers
 "updated", yet the authoritative servers keep the previous value. → Publishing the same values again with a
-different TTL forces it. `04-dns-gandi.sh` checks the authoritative servers and does this automatically.
+different TTL forces it. `04-dns-publish.sh` checks the authoritative servers and does this automatically.
 
 **16. A domain that stays with another provider.** If `example.com` stays on Google Workspace (or similar), do **not**
 add it to mailcow: mailcow would deliver mail sent from your server to `@example.com` locally instead of to Google.

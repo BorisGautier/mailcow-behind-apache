@@ -57,7 +57,7 @@ Configuration → Routage).
 
 **12. Deux enregistrements SPF.** Un domaine qui avait déjà `v=spf1 include:ancien-hebergeur ~all` et reçoit un
 second SPF échoue complètement (`permerror`). → Garder exactement un TXT commençant par `v=spf1`.
-`04-dns-gandi.sh` remplace l'ancien et conserve les autres TXT (vérifications de site…) ; `SPF_EXTRA` garde les
+`04-dns-publish.sh` remplace l'ancien et conserve les autres TXT (vérifications de site…) ; `SPF_EXTRA` garde les
 services tiers qui envoient en votre nom.
 
 **13. MX sans point final.** Dans une zone ou certaines API DNS, `10 mail.exemple.com` (sans point final) est relatif :
@@ -65,11 +65,11 @@ il devient `mail.exemple.com.exemple.org`. → Toujours écrire `mail.exemple.co
 
 **14. DKIM de plus de 255 caractères.** Une clé de 2048 bits ne tient pas dans une seule chaîne TXT. → La découper en
 plusieurs chaînes entre guillemets dans le même enregistrement (`"v=DKIM1; k=rsa; p=MIIB..." "...suite"`). Le script
-Gandi le fait.
+`04-dns-publish.sh` le fait pour chaque fournisseur.
 
 **15. Gandi LiveDNS accepte une modification mais garde l'ancien TXT.** Constaté plusieurs fois : l'API répond
 « mis à jour », mais les serveurs faisant autorité servent toujours l'ancienne valeur. → Republier les mêmes valeurs
-avec un autre TTL force la publication. `04-dns-gandi.sh` vérifie les serveurs faisant autorité et le fait
+avec un autre TTL force la publication. `04-dns-publish.sh` vérifie les serveurs faisant autorité et le fait
 automatiquement.
 
 **16. Un domaine qui reste chez un autre fournisseur.** Si `exemple.com` reste chez Google Workspace (ou autre), ne
