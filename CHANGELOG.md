@@ -5,6 +5,14 @@ versions: [Semantic Versioning](https://semver.org/). The section of a version b
 
 ## [Unreleased]
 
+### Added
+- MTA-STS for every mail domain: `04-dns-publish.sh` also publishes `mta-sts` (CNAME), `_mta-sts` and
+  `_smtp._tls` (TLS reporting). Serve the policy at `https://mta-sts.<domain>/.well-known/mta-sts.txt` (see docs).
+
+### Fixed
+- `manual` DNS provider: a mail domain that is a subdomain (`mail.client.org`) has no NS records of its own;
+  the current records are now read from the parent zone servers instead of failing.
+
 ## [0.1.0] - 2026-10-23
 
 ### Added

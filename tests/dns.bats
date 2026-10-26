@@ -39,11 +39,14 @@ use_fake_provider() {
 @test "mail_dns_records lists every record a mail domain needs" {
   run mail_dns_records client.test "$DKIM"
   [ "$status" -eq 0 ]
-  [ "${#lines[@]}" -eq 9 ]
+  [ "${#lines[@]}" -eq 12 ]
   [[ "$output" == *$'@\tMX\t10 mail.host.test.'* ]]
   [[ "$output" == *$'_dmarc\tTXT\tv=DMARC1; p=none; rua=mailto:postmaster@client.test'* ]]
   [[ "$output" == *$'_submission._tcp\tSRV\t0 1 587 mail.host.test.'* ]]
   [[ "$output" == *$'webmail\tCNAME\tmail.host.test.'* ]]
+  [[ "$output" == *$'mta-sts\tCNAME\tmail.host.test.'* ]]
+  [[ "$output" == *$'_mta-sts\tTXT\tv=STSv1; id=20261026'* ]]
+  [[ "$output" == *$'_smtp._tls\tTXT\tv=TLSRPTv1; rua=mailto:postmaster@client.test'* ]]
 }
 
 @test "apex_txt_merge replaces the old SPF and keeps the other values" {

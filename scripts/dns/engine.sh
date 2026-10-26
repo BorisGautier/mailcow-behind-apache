@@ -28,7 +28,10 @@ mail_dns_records() {
     _submission._tcp SRV "0 1 587 $h" \
     _imaps._tcp SRV "0 1 993 $h" \
     _pop3s._tcp SRV "10 1 995 $h" \
-    webmail CNAME "$h"
+    webmail CNAME "$h" \
+    mta-sts CNAME "$h" \
+    _mta-sts TXT "v=STSv1; id=${MTA_STS_ID:-20261026}" \
+    _smtp._tls TXT "v=TLSRPTv1; rua=mailto:${DMARC_RUA//\{domain\}/$domain}"
 }
 
 # Apex TXT values after the switch: every current value except SPF records, then our SPF.
