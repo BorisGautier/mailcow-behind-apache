@@ -83,3 +83,21 @@ Un fournisseur est un fichier `scripts/dns/<nom>.sh` avec cinq fonctions (voir l
 `scripts/dns/engine.sh`) : `dns_check_config`, `dns_backup FICHIER`, `dns_get NOM TYPE`,
 `dns_set NOM TYPE TTL VALEUR...` et, en option, `dns_republish NOM TYPE`. `tests/fake-dns.sh` est un exemple complet
 utilisé par les tests. Les contributions sont les bienvenues.
+
+## MTA-STS (chiffrement imposé entre serveurs de messagerie)
+
+`04-dns-publish.sh` publie aussi `mta-sts.<domaine>` (CNAME vers le serveur mail), `_mta-sts` (identifiant de la
+politique) et `_smtp._tls` (rapports TLS envoyés à l'adresse des rapports DMARC). La politique elle-même doit être
+servie en HTTPS à `https://mta-sts.<domaine>/.well-known/mta-sts.txt`, par exemple par Apache avec un seul certificat
+pour tous les domaines :
+
+```
+version: STSv1
+mode: testing
+mx: mail.exemple.com
+max_age: 604800
+```
+
+Commencez en `mode: testing` (les destinataires signalent seulement les problèmes), lisez les rapports TLS quelques
+semaines, puis passez en `mode: enforce` et changez `MTA_STS_ID` dans `config.env` (n'importe quelle nouvelle valeur)
+pour que les expéditeurs rechargent la politique.

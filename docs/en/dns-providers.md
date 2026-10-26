@@ -82,3 +82,19 @@ A provider is a file `scripts/dns/<name>.sh` with five functions (see the contra
 `scripts/dns/engine.sh`): `dns_check_config`, `dns_backup FILE`, `dns_get NAME TYPE`,
 `dns_set NAME TYPE TTL VALUE...` and, optionally, `dns_republish NAME TYPE`. `tests/fake-dns.sh` is a complete
 example used by the tests. Pull requests are welcome.
+
+## MTA-STS (encryption enforced between mail servers)
+
+`04-dns-publish.sh` also publishes `mta-sts.<domain>` (CNAME to the mail server), `_mta-sts` (policy id) and
+`_smtp._tls` (TLS reports sent to the DMARC report address). The policy itself must be served over HTTPS at
+`https://mta-sts.<domain>/.well-known/mta-sts.txt`, for example by Apache with one certificate for all domains:
+
+```
+version: STSv1
+mode: testing
+mx: mail.example.com
+max_age: 604800
+```
+
+Start in `mode: testing` (receivers only report problems), read the TLS reports for a few weeks, then switch to
+`mode: enforce` and change `MTA_STS_ID` in `config.env` (any new value) so that senders reload the policy.
